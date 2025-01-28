@@ -65,27 +65,56 @@ class Agent:
             return "Distraction_detected: Unknown"
 
     def is_person_happy(self,image_path):
-        prompt = "Is the person in this image happy? Answer with one of these options: Happy, Sad, Anxious, Neutral. And explain briefly."
+        prompt = "Is the person in this image happy? Answer with one of these options: Happy, Sad, Anxious, Neutral"
         gemini_response = self.generate_gemini_response(image_path, prompt)
         if gemini_response:
             emotion_match = re.search(r"(Happy|Sad|Anxious|Neutral)", gemini_response, re.IGNORECASE)
             if emotion_match:
-                emotion = emotion_match.group(1)
-                if emotion.lower() not in ("happy", "neutral"):
-                    motivational_message = "Remember, it's okay not to be okay. Take a deep breath and focus on what you can control."
-                    Buddy.play_audio_with_gif_gui(motivational_message)
-                    return f"Emotion: {emotion}\nMotivational message: {motivational_message}"
+                if emotion_match.lower() not in ("happy", "neutral"):
+                    return f"Intervention: yes\nEmotion: {emotion_match}"
                 else:
-                    return f"Emotion: {emotion}"
+                    return f"Intervention: no\nEmotion: {emotion_match}"
             else:
-                return "Emotion: Unknown"
+                return "Intervention: no\nEmotion: Unknown"
         else:
-            return "Emotion: Unknown"
+            return "Intervention: no\nEmotion: Unknown"
 
     def act_as_therapist(self,text_input):
-        prompt = f"Act as a therapist and respond to the following: {text_input}"
+        prompt = f'''Act as a therapist and study buddy in care of this person and respond to the following: {text_input} briefly (around 100-word limit) and offer help in any case.
+        Please do not answer with asterisks or similar symbols'''
+
         response = self.model.generate_content(prompt) # Text only
         return response.text 
 
+    def generate_gemini_report(self, start_time, count_distractions,count_badMood):
+        #A report generated based on the time the conversation started
+        
+        try:
+            prompt = f"""Generate a short report considering the conversation started at {start_time}.
+            Every 30 seconds we count if there is a distraction or bad mood (anxious/sad). Here is our data
+            No. Distractions: {count_distractions}, No. Bad mood: {count_badMood}.
+            Repond positvely about the distractions detected in total, a score about stress levels, and focus
+            in the following sample format:[Distractions=3, Stress=75%, Focus=30]
+            Attach a short explanation as well (about 100 word-length)"""
 
+            contents = [{"parts": [{"text": prompt}]}]  # Only text in the request
+
+            response = self.model.generate_content(contents)
+            #print(f'here-1 {response}')
+            gemini_response_text = response.text
+            #print(f'here-2 {gemini_response_text}')
+            # Extract data using regex (handling potential variations)
+            distractions_match = re.search(r"Distractions=(\d+)", gemini_response_text, re.IGNORECASE)
+            stress_match = re.search(r"Stress=(\d+)%", gemini_response_text, re.IGNORECASE)
+            focus_match = re.search(r"Focus=(\d+)", gemini_response_text, re.IGNORECASE)
+
+            distractions = distractions_match.group(1) if distractions_match else "N/A"
+            stress = stress_match.group(1) if stress_match else "N/A"
+            focus = focus_match.group(1) if focus_match else "N/A"
+
+            report_response = f"Distractions={distractions}, Stress={stress}%, Focus={focus}"
+            return report_response, gemini_response_text
+
+        except Exception as e:
+            return f"An error occurred: {e}"
 

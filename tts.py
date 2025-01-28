@@ -14,7 +14,7 @@ class Buddy:
         self.font = pygame.font.Font(None, 30)
         self.text = ""
 
-    def play_audio_with_gif_gui(self, text, image_path="robot_talking.gif", audio_file="tts.mp3"):
+    def play_audio_with_gif_gui(self, text, image_path="robot_talking-1.gif", audio_file="tts.mp3", accent="com.au"):
         try:
             img = Image.open(image_path)
             if img.format == "GIF":
@@ -24,7 +24,7 @@ class Buddy:
             else:
                 self.frames = [pygame.image.load(image_path).convert_alpha()]
                 self.image_rect = self.frames[0].get_rect()
-                self.image_rect.center = (self.screen.get_width() // 2, self.creen.get_height() // 2)
+                self.image_rect.center = (self.screen.get_width() // 2, self.screen.get_height() // 2)
 
             self.text = text
 
@@ -33,7 +33,7 @@ class Buddy:
                 try:
                     script_dir = os.path.dirname(os.path.abspath(__file__))
                     audio_path = os.path.join(script_dir, audio_file)
-                    tts = gTTS(text=text, lang="en")
+                    tts = gTTS(text=text, lang="en", tld=accent)
                     tts.save(audio_path)
                     pygame.mixer.music.load(audio_path)
                     pygame.mixer.music.play()
@@ -72,7 +72,7 @@ class PygameManager:  # New class for calling the tts easily
         self.running = False
         self.clock = None
 
-    def run_loop(self, text_to_display):
+    def run_loop(self, text_to_display, accent="com.au", image_path="robot_talking-1.gif"):
         pygame.init()
         self.screen = pygame.display.set_mode((600, 400))
         pygame.display.set_caption("Buddy with Pygame")
@@ -86,7 +86,7 @@ class PygameManager:  # New class for calling the tts easily
         self.running = True
         self.clock = pygame.time.Clock()
 
-        self.buddy.play_audio_with_gif_gui(text_to_display)
+        self.buddy.play_audio_with_gif_gui(text=text_to_display,accent=accent, image_path=image_path)
 
         while self.running:
             for event in pygame.event.get():

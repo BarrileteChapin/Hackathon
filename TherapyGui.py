@@ -22,7 +22,7 @@ style.configure("TScrollbar", background=BACKGROUND_COLOR)
 class TherapyGUI:
     def __init__(self, master, act_as_therapist_func):
         self.master = master
-        self.master.title("Therapy Chat")
+        self.master.title("Buddy Chat")
         self.master.configure(bg=BACKGROUND_COLOR)
         self.act_as_therapist = act_as_therapist_func
 
@@ -137,8 +137,8 @@ class TherapyGUI:
             return f"An error occurred during transcription: {e}"
 
     def send_text_from_voice(self, user_text):
-        print("goes here -speech ")
-        print(user_text)
+        #print("goes here -speech ")
+        #print(user_text)
         
         therapy_response = self.act_as_therapist(user_text)
 
@@ -147,13 +147,12 @@ class TherapyGUI:
             self.output_text.config(state=tk.NORMAL)
             self.output_text.insert(tk.END, therapy_response + "\n")
             self.output_text.config(state=tk.DISABLED)
-            self.buddy.run_loop(therapy_response)
+            self.buddy.run_loop(therapy_response,image_path="robot.png")
 
         # Start thread with correct reference
         therapy_thread = threading.Thread(target=run_therapy_task)
         therapy_thread.start()
 
-        print("or maybe not")
 
     def send_text(self):
         user_text = self.input_text.get("1.0", tk.END).strip()
