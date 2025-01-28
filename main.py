@@ -120,22 +120,3 @@ if __name__ == "__main__":
     mainGUI()
 
 
-'''
-if __name__ == "__main__":
-    #run distraction check... it exits when program is terminated
-    periodic_thread = threading.Thread(target=checkDistraction, daemon=True) 
-    periodic_thread.start()
-    # Example usage: tts
-    text = "Hello, Trainer! I've been waiting for you."
-    image_path = "robot_talking.gif"
-    audio_file = "output.mp3"
-    Buddy.play_audio_with_gif_gui(text,image_path,audio_file) 
-    
-    while True:
-        text_input = input("Enter text for therapy (or type 'exit'): ")
-        if text_input.lower() == "exit":
-            programRunning=False
-            break
-        therapy_thread = threading.Thread(target=therapy, args=(text_input,))
-        therapy_thread.start()
-'''
