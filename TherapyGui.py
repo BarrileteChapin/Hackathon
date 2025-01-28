@@ -137,15 +137,24 @@ class TherapyGUI:
         print("goes here -speech ")
         print(user_text)
         #if user_text:
-        def run_therapy_task(text_input):
-            therapy_response = self.act_as_therapist(text_input)
+        therapy_response = self.act_as_therapist(user_text)
+        def run_therapy_task():
             self.output_text.config(state=tk.NORMAL)  # Enable edition
             self.output_text.insert(tk.END, therapy_response + "\n")
             self.output_text.config(state=tk.DISABLED)  # Disable edition
-            #self.buddy.play_audio_with_gif_gui(therapy_response) #Call the buddy function
+            # In TherapyGui.py's send_text_from_voice
+            def play_and_animate():
+                if not self.buddy.master.winfo_exists():  # Check window exists
+                    self.buddy = Buddy(tk.Toplevel(root))  # Recreate if needed
+                self.buddy.master.deiconify()
+                self.buddy.master.lift()
+                self.buddy.play_audio_with_gif_gui(therapy_response)
 
-        therapy_thread = threading.Thread(target=run_therapy_task, args=(user_text,))
-        therapy_thread.start()
+
+            self.master.after(0, play_and_animate) #Call the new function
+
+        self.master.after(0, run_therapy_task)
+
         print("or maybe not")
 
     def send_text(self):

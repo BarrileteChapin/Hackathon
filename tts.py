@@ -7,51 +7,64 @@ from PIL import Image, ImageTk, ImageSequence
 import os
 
 class Buddy:
-    def __init__(self, master): #take the main window as parameter
+    def __init__(self, master):
         self.master = master
         self.image_label = ttk.Label(master)
         self.image_label.pack()
         self.transcript_label = ttk.Label(master, wraplength=350)
         self.transcript_label.pack(pady=10)
-
+        self.frames = []
+        self._animation_id = None  # Track animation frame updates
 
     def play_audio_with_gif_gui(self, text, image_path="robot_talking.gif", audio_file="tts.mp3"):
-        try:
-            img = Image.open(image_path)
-            if img.format == "GIF":
-                self.frames = [ImageTk.PhotoImage(frame) for frame in ImageSequence.Iterator(img)]
-            else:
-                self.frames = [ImageTk.PhotoImage(img)]
+        # Cancel any existing animation first
+        if self._animation_id:
+            self.master.after_cancel(self._animation_id)
+            self._animation_id = None
 
-            self.animate_gif() #call the animate gif function
-
-        except FileNotFoundError:
-            error_label = ttk.Label(self.master, text=f"Error: Image file not found at {image_path}")
-            error_label.pack()
-            return
-
-        self.transcript_label.config(text=text) #set the text
-
-        def play_audio():
-            pygame.mixer.init()
-            try:
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                audio_path = os.path.join(script_dir, audio_file)
-                tts = gTTS(text=text, lang="en")
-                tts.save(audio_path)
-                pygame.mixer.music.load(audio_path)
-                pygame.mixer.music.play()
-                while pygame.mixer.music.get_busy():
-                    pygame.time.Clock().tick(10)
-            except pygame.error as e:
-                print(f"Error playing audio with pygame: {e}")
-            finally:
-                pygame.mixer.quit()
-                self.master.after(0, self.master.destroy) # close the main window
-
-        audio_thread = threading.Thread(target=play_audio)
-        audio_thread.start()
+        if not hasattr(ImageSequence, 'Iterator') or not Image.open(image_path).is_animated:
+            self.frames = [ImageTk.PhotoImage(Image.open(image_path))]
+        # Keep persistent reference to frames
+        self.frames = [ImageTk.PhotoImage(frame.copy()) 
+                    for frame in ImageSequence.Iterator(Image.open(image_path))]
+        
+        # Start animation in main thread
+        self.master.after(0, self._start_animation_and_audio, text, audio_file)
 
     def animate_gif(self, frame_index=0):
-        self.image_label.config(image=self.frames[frame_index])
-        self.master.after(50, self.animate_gif, (frame_index + 1) % len(self.frames))
+        if self.frames:
+            try:
+                self.image_label.config(image=self.frames[frame_index])
+            except tk.TclError:
+                return  # Prevent crash if window closed
+            self._animation_id = self.master.after(50, self.animate_gif, 
+                                                (frame_index + 1) % len(self.frames))
+
+    def _start_animation_and_audio(self, text, audio_file):
+        if not self.master.winfo_exists():
+            return  # Prevent call on destroyed window
+        self.animate_gif()
+        self.transcript_label.config(text=text)
+        threading.Thread(target=self._play_audio, args=(text, audio_file), daemon=True).start()
+
+    def _play_audio(self, text, audio_file):
+        # Existing audio code with error handling
+        try:
+            tts = gTTS(text=text, lang="en")
+            tts.save(audio_file)
+            pygame.mixer.init()
+            pygame.mixer.music.load(audio_file)
+            pygame.mixer.music.play()
+            while pygame.mixer.music.get_busy():
+                pygame.time.Clock().tick(10)
+        except Exception as e:
+            self.master.after(0, self._show_error, f"Audio Error: {str(e)}")
+        finally:
+            pygame.mixer.quit()
+
+    def _show_error(self, message):
+        self.transcript_label.config(text=message, foreground="red")
+
+
+
+
