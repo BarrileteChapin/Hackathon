@@ -1,7 +1,7 @@
 import google.generativeai as genai
 import os
 import base64
-
+import re
 
 class Agent: 
     def __init__(self): 
@@ -11,6 +11,10 @@ class Agent:
 
         # Select the Gemini model (e.g., "gemini-pro")
         self.model = genai.GenerativeModel('gemini-1.5-flash')
+
+        # Regular expression for matching social media URLs (improve as needed)
+        self.social_media_regex = r"(facebook\.com|twitter\.com|instagram\.com|youtube\.com|tiktok\.com|linkedin\.com)"
+
 
     
     #image/text input
@@ -46,13 +50,36 @@ class Agent:
         except Exception as e:
             return f"An error occurred: {e}"
 
-    def analyze_image_emotions(self,image_path):
-        prompt = "Analyze the emotions expressed in this image."
-        return self.generate_gemini_response(image_path, prompt)
+    def analyze_image_distractions(self,image_path):
+        prompt = "Analyze this image. Does it contain elements suggesting a social media website (e.g., logos, interfaces, URLs)? Answer with 'yes' or 'no'."
+        gemini_response = self.generate_gemini_response(image_path, prompt)
+        if gemini_response:
+            match = re.search(self.social_media_regex, gemini_response.lower())
+            if match:
+                return "Distraction_detected: yes"
+            elif "yes" in gemini_response.lower():
+                return "Distraction_detected: yes"
+            else:
+                return "Distraction_detected: no"
+        else:
+            return "Distraction_detected: Unknown"
 
     def is_person_happy(self,image_path):
-        prompt = "Is the person in this image happy? Answer with yes or no and explain briefly."
-        return self.generate_gemini_response(image_path, prompt)
+        prompt = "Is the person in this image happy? Answer with one of these options: Happy, Sad, Anxious, Neutral. And explain briefly."
+        gemini_response = self.generate_gemini_response(image_path, prompt)
+        if gemini_response:
+            emotion_match = re.search(r"(Happy|Sad|Anxious|Neutral)", gemini_response, re.IGNORECASE)
+            if emotion_match:
+                emotion = emotion_match.group(1)
+                if emotion.lower() not in ("happy", "neutral"):
+                    motivational_message = "Remember, it's okay not to be okay. Take a deep breath and focus on what you can control."
+                    return f"Emotion: {emotion}\nMotivational message: {motivational_message}"
+                else:
+                    return f"Emotion: {emotion}"
+            else:
+                return "Emotion: Unknown"
+        else:
+            return "Emotion: Unknown"
 
     def act_as_therapist(self,text_input):
         prompt = f"Act as a therapist and respond to the following: {text_input}"
@@ -61,16 +88,3 @@ class Agent:
 
 
 
-# Example usage:
-image_path1 = "robot.png"  # Replace with the path to your image
-text_input="I have been feeling stressed" 
-
-miniGemini = Agent()
-emotion_analysis = miniGemini.analyze_image_emotions(image_path1)
-happiness_check = miniGemini.is_person_happy(image_path1)
-therapy_response = miniGemini.act_as_therapist(text_input)
-
-print("Emotion Analysis:", emotion_analysis)
-print("Happiness Check:", happiness_check)
-print("Therapy Response:", therapy_response)  
- 
