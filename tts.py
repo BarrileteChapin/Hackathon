@@ -20,11 +20,11 @@ class Buddy:
             if img.format == "GIF":
                 self.frames = [pygame.image.fromstring(frame.tobytes(), frame.size, frame.mode).convert_alpha() for frame in ImageSequence.Iterator(img)]
                 self.image_rect = self.frames[0].get_rect()
-                self.image_rect.center = (screen.get_width() // 2, screen.get_height() // 2)
+                self.image_rect.center = (self.screen.get_width() // 2, self.screen.get_height() // 2)
             else:
                 self.frames = [pygame.image.load(image_path).convert_alpha()]
                 self.image_rect = self.frames[0].get_rect()
-                self.image_rect.center = (screen.get_width() // 2, screen.get_height() // 2)
+                self.image_rect.center = (self.screen.get_width() // 2, self.creen.get_height() // 2)
 
             self.text = text
 
@@ -63,37 +63,50 @@ class Buddy:
         text_rect.center = (self.screen.get_width() // 2, self.screen.get_height() - 50)
         self.screen.blit(text_surface, text_rect)
 
-# Define audio_finished globally:
-def audio_finished():
-    global running
-    running = False
 
-# Example Usage:
-pygame.init()
-screen = pygame.display.set_mode((600, 400))
-pygame.display.set_caption("Buddy with Pygame")
 
-buddy = Buddy(screen)
+class PygameManager:  # New class for calling the tts easily
+    def __init__(self):
+        self.screen = None
+        self.buddy = None
+        self.running = False
+        self.clock = None
 
-def start_buddy(text):
-    buddy.play_audio_with_gif_gui(text)
+    def run_loop(self, text_to_display):
+        pygame.init()
+        self.screen = pygame.display.set_mode((600, 400))
+        pygame.display.set_caption("Buddy with Pygame")
+        self.buddy = Buddy(self.screen)
 
-running = True
-clock = pygame.time.Clock()
+        def audio_finished():
+            self.running = False
+
+        pygame.mixer.music.set_endevent(pygame.USEREVENT + 1)
+
+        self.running = True
+        self.clock = pygame.time.Clock()
+
+        self.buddy.play_audio_with_gif_gui(text_to_display)
+
+        while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                if event.type == pygame.USEREVENT + 1:
+                    audio_finished()
+
+            self.screen.fill((0, 0, 0))
+            self.buddy.draw()
+            pygame.display.flip()
+            self.clock.tick(60)
+
+        pygame.quit()
+
+'''' Testing
+def talkTTS(text):
+    pygame_manager = PygameManager()  # Create an instance
+    pygame_manager.run_loop(text)
+
 text_to_display = "This is a test!"
-
-start_buddy(text_to_display)
-
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.USEREVENT + 1:
-            audio_finished()
-
-    screen.fill((0, 0, 0))
-    buddy.draw()
-    pygame.display.flip()
-    clock.tick(60)
-
-pygame.quit()
+talkTTS(text_to_display)
+'''
