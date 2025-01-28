@@ -47,11 +47,12 @@ def therapy(text_input):
     print(therapist)
 
 
-def open_therapy_gui():
+def open_therapy_gui(buddy):
     global therapy_window  # Declare therapy_window as global
+    global my_buddy
     if therapy_window is None or not tk.Toplevel.winfo_exists(therapy_window): #Check if window exists
         therapy_window = tk.Toplevel(root)
-        therapy_gui = TherapyGUI(therapy_window, miniGemini.act_as_therapist)
+        therapy_gui = TherapyGUI(therapy_window, miniGemini.act_as_therapist, buddy)
         output_text = therapy_gui.output_text
         def start_tasks():
             global running_periodic
@@ -93,14 +94,17 @@ def on_closing_therapy(window):
 def mainGUI():
     global root, therapy_window, running_periodic
     root = tk.Tk()  # Only ONE Tk instance
-    root.title("Gemini App - Main Menu")
+    root.title("Study Buddy - Main Menu")
     root.configure(bg=BACKGROUND_COLOR)
     therapy_window = None
     running_periodic = False
 
     def start_app():
         root.withdraw()  # Hide the menu window
-        open_therapy_gui()
+        global buddy_window
+        buddy_window = tk.Toplevel(root) #Create the buddy window
+        buddy = Buddy(buddy_window) #create the buddy object
+        open_therapy_gui(buddy) #Send the buddy object
 
     def close_app():
         on_closing(root)
@@ -114,7 +118,8 @@ def mainGUI():
     root.protocol("WM_DELETE_WINDOW", lambda: on_closing(root))
     root.mainloop()
 
-    
+global running_periodic
+running_periodic = False
 
 if __name__ == "__main__":
     mainGUI()

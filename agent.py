@@ -2,7 +2,7 @@ import google.generativeai as genai
 import os
 import base64
 import re
-
+from tts import Buddy
 class Agent: 
     def __init__(self): 
         # Configure the Gemini API
@@ -73,6 +73,7 @@ class Agent:
                 emotion = emotion_match.group(1)
                 if emotion.lower() not in ("happy", "neutral"):
                     motivational_message = "Remember, it's okay not to be okay. Take a deep breath and focus on what you can control."
+                    Buddy.play_audio_with_gif_gui(motivational_message)
                     return f"Emotion: {emotion}\nMotivational message: {motivational_message}"
                 else:
                     return f"Emotion: {emotion}"
@@ -84,7 +85,7 @@ class Agent:
     def act_as_therapist(self,text_input):
         prompt = f"Act as a therapist and respond to the following: {text_input}"
         response = self.model.generate_content(prompt) # Text only
-        return response.text
+        return response.text 
 
 
 
