@@ -13,6 +13,7 @@ class Buddy:
         self.image_rect = None
         self.font = pygame.font.Font(None, 30)
         self.text = ""
+        pygame.mixer.init()
 
     def play_audio_with_gif_gui(self, text, image_path="robot_talking-1.gif", audio_file="tts.mp3", accent="com.au"):
         try:
@@ -29,10 +30,12 @@ class Buddy:
             self.text = text
 
             def play_audio(text):
-                pygame.mixer.init()
+                #pygame.mixer.init()
                 try:
                     script_dir = os.path.dirname(os.path.abspath(__file__))
-                    audio_path = os.path.join(script_dir, audio_file)
+                    timestamp = int(time.time() * 1000) #ms
+                    audio_file1=f'{timestamp}_{audio_file}'
+                    audio_path = os.path.join(script_dir, audio_file1)
                     tts = gTTS(text=text, lang="en", tld=accent)
                     tts.save(audio_path)
                     pygame.mixer.music.load(audio_path)
@@ -41,8 +44,8 @@ class Buddy:
                         pygame.time.Clock().tick(10)
                 except pygame.error as e:
                     print(f"Error playing audio with pygame: {e}")
-                finally:
-                    pygame.mixer.quit()
+                #finally:
+                #    pygame.mixer.quit()
 
             pygame.mixer.music.set_endevent(pygame.USEREVENT + 1)
 
@@ -71,9 +74,11 @@ class PygameManager:  # New class for calling the tts easily
         self.buddy = None
         self.running = False
         self.clock = None
+        pygame.font.init()
+        pygame.init()
 
     def run_loop(self, text_to_display, accent="com.au", image_path="robot_talking-1.gif"):
-        pygame.init()
+        #pygame.init()
         self.screen = pygame.display.set_mode((600, 400))
         pygame.display.set_caption("Buddy with Pygame")
         self.buddy = Buddy(self.screen)
@@ -99,8 +104,8 @@ class PygameManager:  # New class for calling the tts easily
             self.buddy.draw()
             pygame.display.flip()
             self.clock.tick(60)
-
-        pygame.quit()
+        pygame.display.quit()
+        #pygame.quit()
 
 ''''
 def talkTTS(text):

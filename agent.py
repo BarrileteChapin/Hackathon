@@ -65,12 +65,15 @@ class Agent:
             return "Distraction_detected: Unknown"
 
     def is_person_happy(self,image_path):
-        prompt = "Is the person in this image happy? Answer with one of these options: Happy, Sad, Anxious, Neutral"
+        prompt = "Is the person in this image happy? Answer with one of these options: Happy, Sad, Anxious, Anger, Neutral"
         gemini_response = self.generate_gemini_response(image_path, prompt)
         if gemini_response:
-            emotion_match = re.search(r"(Happy|Sad|Anxious|Neutral)", gemini_response, re.IGNORECASE)
+            emotion_match = re.search(r"(Happy|Sad|Anxious|Anger|Neutral)", gemini_response, re.IGNORECASE) 
+            print(f'emotion: {gemini_response}')
             if emotion_match:
-                if emotion_match.lower() not in ("happy", "neutral"):
+                matched_emotion = emotion_match.group(1) 
+            
+                if matched_emotion.lower() not in ("happy", "neutral"):
                     return f"Intervention: yes\nEmotion: {emotion_match}"
                 else:
                     return f"Intervention: no\nEmotion: {emotion_match}"

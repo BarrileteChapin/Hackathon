@@ -57,8 +57,10 @@ def checkDistraction():
         print(tempHappiness)
 
         if("yes" in tempHappiness):
+            global count_badMood
             count_badMood+=1
         if ("yes" in tempDistraction): 
+            global count_distractions
             count_distractions+=1    
             if("yes" in tempHappiness):
                 #we need to intervene
@@ -67,7 +69,7 @@ def checkDistraction():
             
 
         #delay
-        time.sleep(30)
+        time.sleep(10)
 
 
 def therapy(text_input):
