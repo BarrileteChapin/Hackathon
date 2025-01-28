@@ -47,12 +47,13 @@ def therapy(text_input):
     print(therapist)
 
 
-def open_therapy_gui(buddy):
-    global therapy_window  # Declare therapy_window as global
-    global my_buddy
-    if therapy_window is None or not tk.Toplevel.winfo_exists(therapy_window): #Check if window exists
+def open_therapy_gui():
+    global therapy_window # Declare therapy_window as global
+    if therapy_window is None or not tk.Toplevel.winfo_exists(therapy_window):
         therapy_window = tk.Toplevel(root)
-        therapy_gui = TherapyGUI(therapy_window, miniGemini.act_as_therapist, buddy)
+        therapy_gui = TherapyGUI(therapy_window, miniGemini.act_as_therapist)
+        therapy_window.lift()
+        therapy_window.focus_force()
         output_text = therapy_gui.output_text
         def start_tasks():
             global running_periodic
@@ -92,7 +93,7 @@ def on_closing_therapy(window):
     window.destroy()
 
 def mainGUI():
-    global root, therapy_window, running_periodic
+    global root, therapy_window,running_periodic
     root = tk.Tk()  # Only ONE Tk instance
     root.title("Study Buddy - Main Menu")
     root.configure(bg=BACKGROUND_COLOR)
@@ -100,11 +101,9 @@ def mainGUI():
     running_periodic = False
 
     def start_app():
-        root.withdraw()  # Hide the menu window
-        global buddy_window
-        buddy_window = tk.Toplevel(root) #Create the buddy window
-        buddy = Buddy(buddy_window) #create the buddy object
-        open_therapy_gui(buddy) #Send the buddy object
+        root.withdraw()
+        root.withdraw()
+        open_therapy_gui()
 
     def close_app():
         on_closing(root)
@@ -121,7 +120,9 @@ def mainGUI():
 global running_periodic
 running_periodic = False
 
+
 if __name__ == "__main__":
     mainGUI()
+
 
 

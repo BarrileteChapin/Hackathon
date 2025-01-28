@@ -102,7 +102,7 @@ class PygameManager:  # New class for calling the tts easily
 
         pygame.quit()
 
-'''' Testing
+''''
 def talkTTS(text):
     pygame_manager = PygameManager()  # Create an instance
     pygame_manager.run_loop(text)

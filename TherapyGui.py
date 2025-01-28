@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext
 import threading
 from transcription import *
-from tts import Buddy
+from tts import *
 
 # Style configuration
 BACKGROUND_COLOR = "#f0f0f0"  # Light gray background
@@ -20,13 +20,14 @@ style.configure("TEntry", font=(FONT_FAMILY, FONT_SIZE))
 style.configure("TScrollbar", background=BACKGROUND_COLOR)
 
 class TherapyGUI:
-    def __init__(self, master, act_as_therapist_func,buddy):
+    def __init__(self, master, act_as_therapist_func):
         self.master = master
         self.master.title("Therapy Chat")
         self.master.configure(bg=BACKGROUND_COLOR)
         self.act_as_therapist = act_as_therapist_func
-        self.buddy = buddy #Save the buddy object
 
+        #Buddy TTS
+        self.buddy = PygameManager()
         # Input Frame
         input_frame = ttk.Frame(self.master, padding=10)
         input_frame.pack(fill=tk.X)
@@ -63,6 +64,8 @@ class TherapyGUI:
         self.recording = False
         self.recorded_data = []
         self.recording_thread = None
+
+        self.master.protocol("WM_DELETE_WINDOW", self.on_close)
 
     
     def start_recording(self):
@@ -136,24 +139,19 @@ class TherapyGUI:
     def send_text_from_voice(self, user_text):
         print("goes here -speech ")
         print(user_text)
-        #if user_text:
+        
         therapy_response = self.act_as_therapist(user_text)
+
+        # Properly bound method with self
         def run_therapy_task():
-            self.output_text.config(state=tk.NORMAL)  # Enable edition
+            self.output_text.config(state=tk.NORMAL)
             self.output_text.insert(tk.END, therapy_response + "\n")
-            self.output_text.config(state=tk.DISABLED)  # Disable edition
-            # In TherapyGui.py's send_text_from_voice
-            def play_and_animate():
-                if not self.buddy.master.winfo_exists():  # Check window exists
-                    self.buddy = Buddy(tk.Toplevel(root))  # Recreate if needed
-                self.buddy.master.deiconify()
-                self.buddy.master.lift()
-                self.buddy.play_audio_with_gif_gui(therapy_response)
+            self.output_text.config(state=tk.DISABLED)
+            self.buddy.run_loop(therapy_response)
 
-
-            self.master.after(0, play_and_animate) #Call the new function
-
-        self.master.after(0, run_therapy_task)
+        # Start thread with correct reference
+        therapy_thread = threading.Thread(target=run_therapy_task)
+        therapy_thread.start()
 
         print("or maybe not")
 
@@ -179,3 +177,7 @@ class TherapyGUI:
         self.output_text.config(state=tk.NORMAL)  # Enable edition
         self.output_text.delete("1.0", tk.END)
         self.output_text.config(state=tk.DISABLED)  # Disable edition
+
+    def on_close(self):
+        """Cleanup before closing"""
+        self.master.destroy()
