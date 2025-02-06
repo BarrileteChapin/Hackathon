@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext
 import threading
 from transcription import *
+from tts import *
 
 # Style configuration
 BACKGROUND_COLOR = "#f0f0f0"  # Light gray background
@@ -21,10 +22,12 @@ style.configure("TScrollbar", background=BACKGROUND_COLOR)
 class TherapyGUI:
     def __init__(self, master, act_as_therapist_func):
         self.master = master
-        self.master.title("Therapy Chat")
+        self.master.title("Buddy Chat")
         self.master.configure(bg=BACKGROUND_COLOR)
         self.act_as_therapist = act_as_therapist_func
 
+        #Buddy TTS
+        self.buddy = PygameManager()
         # Input Frame
         input_frame = ttk.Frame(self.master, padding=10)
         input_frame.pack(fill=tk.X)
@@ -62,35 +65,40 @@ class TherapyGUI:
         self.recorded_data = []
         self.recording_thread = None
 
+        self.master.protocol("WM_DELETE_WINDOW", self.on_close)
+
     
     def start_recording(self):
         if not self.recording:
-            self.recorded_data = []
             self.recording = True
-            self.record_button.config(state=tk.DISABLED)
+            self.record_button.config(state=tk.DISABLED, text="Recording...")
             self.stop_recording_button.config(state=tk.NORMAL)
             self.output_text.config(state=tk.NORMAL)
             self.output_text.insert(tk.END, "Recording...\n")
             self.output_text.config(state=tk.DISABLED)
+            self.recorded_frames = []
 
             def recording_thread_function():
                 try:
-                    with sd.InputStream(samplerate=16000, channels=1) as stream:
+                    fs = 44100
+                    with sd.InputStream(samplerate=fs, channels=1) as stream:
                         while self.recording:
                             data, overflowed = stream.read(1024)
-                            if data is not None: #Check if data is not None
-                                self.recorded_data.append(data)
-
-                    if self.recorded_data: #Check if there is data
-                        recording = np.concatenate(self.recorded_data, axis=0)
-                        sf.write("input.wav", recording, 16000)
-
-                        transcribed_text = self.process_recorded_audio("input.wav")
+                            if data is not None:
+                                self.recorded_frames.append(data)
+                    if self.recorded_frames:
+                        myrecording = np.concatenate(self.recorded_frames, axis=0)
+                        sf.write("input.wav", myrecording, fs)
+                        transcribed_text = record_and_transcribe(data = self.recorded_frames, sample_rate = fs) #Call with the data
                         if transcribed_text:
                             self.output_text.config(state=tk.NORMAL)
                             self.output_text.insert(tk.END, "You (Voice): " + transcribed_text + "\n")
                             self.output_text.config(state=tk.DISABLED)
-                            self.send_text_from_voice(transcribed_text)
+                            self.master.after(0, self.send_text_from_voice, transcribed_text)
+                    else:
+                         self.output_text.config(state=tk.NORMAL)
+                         self.output_text.insert(tk.END, "No audio recorded\n")
+                         self.output_text.config(state=tk.DISABLED)
                 except Exception as e:
                     print(f"Error during recording: {e}")
                     self.output_text.config(state=tk.NORMAL)
@@ -98,21 +106,22 @@ class TherapyGUI:
                     self.output_text.config(state=tk.DISABLED)
                 finally:
                     self.recording = False
-                    self.record_button.config(text="Start Recording", state=tk.NORMAL)
+                    self.recorded_frames = []
+                    self.record_button.config(state=tk.NORMAL, text="Start Recording")
                     self.stop_recording_button.config(state=tk.DISABLED)
 
             self.recording_thread = threading.Thread(target=recording_thread_function)
             self.recording_thread.start()
 
     def stop_recording(self):
-        self.recording = False  # This is the correct way to stop the recording
+        self.recording = False
 
     def clear_text(self):
         self.input_text.delete("1.0", tk.END)
         self.output_text.config(state=tk.NORMAL) #Enable edition
         self.output_text.delete("1.0", tk.END)
         self.output_text.config(state=tk.DISABLED) #Disable edition
-        
+
     def process_recorded_audio(self, filename):
         try:
             r = sr.Recognizer()
@@ -128,14 +137,22 @@ class TherapyGUI:
             return f"An error occurred during transcription: {e}"
 
     def send_text_from_voice(self, user_text):
-        if user_text:
-            def run_therapy_task(text_input):
-                therapy_response = self.act_as_therapist(text_input)
-                self.output_text.config(state=tk.NORMAL)  # Enable edition
-                self.output_text.insert(tk.END, therapy_response + "\n")
-                self.output_text.config(state=tk.DISABLED)  # Disable edition
-            therapy_thread = threading.Thread(target=run_therapy_task, args=(user_text,))
-            therapy_thread.start()
+        #print("goes here -speech ")
+        #print(user_text)
+        
+        therapy_response = self.act_as_therapist(user_text)
+
+        # Properly bound method with self
+        def run_therapy_task():
+            self.output_text.config(state=tk.NORMAL)
+            self.output_text.insert(tk.END, therapy_response + "\n")
+            self.output_text.config(state=tk.DISABLED)
+            self.buddy.run_loop(therapy_response,image_path="robot.png")
+
+        # Start thread with correct reference
+        therapy_thread = threading.Thread(target=run_therapy_task)
+        therapy_thread.start()
+
 
     def send_text(self):
         user_text = self.input_text.get("1.0", tk.END).strip()
@@ -159,3 +176,7 @@ class TherapyGUI:
         self.output_text.config(state=tk.NORMAL)  # Enable edition
         self.output_text.delete("1.0", tk.END)
         self.output_text.config(state=tk.DISABLED)  # Disable edition
+
+    def on_close(self):
+        """Cleanup before closing"""
+        self.master.destroy()
