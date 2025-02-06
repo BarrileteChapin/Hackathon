@@ -32,8 +32,8 @@ python main.py
 Watch our project pitch video [here](https://www.youtube.com/watch?v=rQBf2P4-ZHo).
 
 ## Contributors
-@JacobPersi
-@BarrileteChapin 
+- [@JacobPersi](https://github.com/JacobPersi)
+- [@BarrileteChapin](https://github.com/BarrileteChapin)
 
 
 
